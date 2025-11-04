@@ -24,11 +24,13 @@ require_once __DIR__ . '/includes/config.php';
 
 $error = '';
 
+// Start new buffer for HTML output
+ob_start();
+
 // Already logged in?
 if (isset($_SESSION['editor_logged_in']) && $_SESSION['editor_logged_in'] === true) {
-    ob_start();
+    ob_end_clean();
     header('Location: dashboard.php');
-    ob_end_flush();
     exit;
 }
 
@@ -60,16 +62,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         @file_put_contents($logFile, $logEntry . PHP_EOL, FILE_APPEND);
 
         // Redirect
-        ob_start();
+        ob_end_clean();
         header('Location: dashboard.php');
-        ob_end_flush();
         exit;
     } else {
         $error = 'Invalid username or password';
     }
 }
-
-ob_clean();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -293,4 +292,3 @@ ob_clean();
     </div>
 </body>
 </html>
-<?php ob_end_flush(); ?>

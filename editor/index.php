@@ -5,6 +5,11 @@
  * Version: 1.0.0
  */
 
+// Initialize database session handler
+require_once __DIR__ . '/includes/session-handler.php';
+$sessionDbPath = __DIR__ . '/database/sessions.db';
+initDatabaseSessions($sessionDbPath);
+
 session_start();
 
 // Configuration

@@ -3,6 +3,11 @@
  * Neofox Media Visual Editor - Settings Page
  */
 
+// Initialize database session handler
+require_once __DIR__ . '/includes/session-handler.php';
+$sessionDbPath = __DIR__ . '/database/sessions.db';
+initDatabaseSessions($sessionDbPath);
+
 session_start();
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/functions.php';
