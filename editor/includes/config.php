@@ -30,9 +30,9 @@ define('GIPHY_API_KEY', ''); // For GIF search
 // Theme Settings
 define('EDITOR_THEME', 'dark'); // 'light' or 'dark'
 
-// Session Configuration
-ini_set('session.gc_maxlifetime', 3600 * 24); // 24 hours
-session_set_cookie_params(3600 * 24);
+// Session Configuration - Moved to login.php to avoid "headers already sent" errors
+// ini_set('session.gc_maxlifetime', 3600 * 24); // 24 hours
+// session_set_cookie_params(3600 * 24);
 
 // Error Reporting (disable in production)
 error_reporting(E_ALL);

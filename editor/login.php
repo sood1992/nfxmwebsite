@@ -1,30 +1,56 @@
 <?php
 /**
- * Neofox Media Visual Editor - Login Page
+ * Neofox Media Visual Editor - Login Page (Fixed)
  */
 
+// Configure session BEFORE starting it
+ini_set('session.cookie_lifetime', 86400);
+ini_set('session.gc_maxlifetime', 86400);
+session_set_cookie_params(86400);
+
+// Start session
 session_start();
+
+// Load config
 require_once __DIR__ . '/includes/config.php';
 
 $error = '';
 
-// Check if already logged in
+// Already logged in? Redirect to dashboard
 if (isset($_SESSION['editor_logged_in']) && $_SESSION['editor_logged_in'] === true) {
-    header('Location: index.php');
+    header('Location: dashboard.php');
     exit;
 }
 
 // Handle login
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'] ?? '';
+    $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    if ($username === EDITOR_USERNAME && password_verify($password, EDITOR_PASSWORD)) {
+    if (empty($username) || empty($password)) {
+        $error = 'Please enter username and password';
+    } elseif ($username === EDITOR_USERNAME && password_verify($password, EDITOR_PASSWORD)) {
+        // SUCCESS!
         $_SESSION['editor_logged_in'] = true;
         $_SESSION['editor_username'] = $username;
         $_SESSION['login_time'] = time();
 
-        header('Location: index.php');
+        // Log the login
+        $logDir = __DIR__ . '/logs';
+        if (!is_dir($logDir)) {
+            @mkdir($logDir, 0755, true);
+        }
+        $logFile = $logDir . '/activity.log';
+        $logEntry = json_encode([
+            'timestamp' => date('Y-m-d H:i:s'),
+            'action' => 'user_login',
+            'username' => $username,
+            'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+        ]);
+        @file_put_contents($logFile, $logEntry . PHP_EOL, FILE_APPEND);
+
+        // Redirect to dashboard
+        header('Location: dashboard.php');
         exit;
     } else {
         $error = 'Invalid username or password';
@@ -47,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
@@ -61,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             width: 100%;
-            max-width: 450px;
+            max-width: 420px;
             overflow: hidden;
         }
 
@@ -133,8 +159,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .error-message {
-            background: #fee;
-            color: #c33;
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
             padding: 12px 15px;
             border-radius: 8px;
             margin-bottom: 20px;
@@ -189,6 +216,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 16px;
         }
 
+        .credentials-box {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #1e40af;
+        }
+
+        .credentials-box strong {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .credentials-box code {
+            background: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
         @media (max-width: 480px) {
             .login-container {
                 border-radius: 0;
@@ -222,18 +272,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <form method="POST" action="">
                 <div class="form-group">
-                    <label>Username</label>
+                    <label for="username">Username</label>
                     <div class="input-group">
                         <i class="fas fa-user"></i>
-                        <input type="text" name="username" class="form-control" placeholder="Enter username" required autofocus>
+                        <input type="text" id="username" name="username" class="form-control"
+                               placeholder="Enter username" required autofocus>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label>Password</label>
+                    <label for="password">Password</label>
                     <div class="input-group">
                         <i class="fas fa-lock"></i>
-                        <input type="password" name="password" class="form-control" placeholder="Enter password" required>
+                        <input type="password" id="password" name="password" class="form-control"
+                               placeholder="Enter password" required>
                     </div>
                 </div>
 
@@ -241,6 +293,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <i class="fas fa-sign-in-alt"></i> Sign In to Editor
                 </button>
             </form>
+
+            <div class="credentials-box">
+                <strong>🔑 Default Login Credentials:</strong>
+                Username: <code>admin</code><br>
+                Password: <code>password</code>
+            </div>
 
             <ul class="feature-list">
                 <li><i class="fas fa-check-circle"></i> Drag & Drop Page Builder</li>
@@ -251,8 +309,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <div class="login-footer">
-            <strong>Default Credentials:</strong> admin / password<br>
-            <small>Please change these in config.php</small>
+            <strong>⚠️ Important:</strong> Change default credentials after first login!<br>
+            <small>Edit: <code>editor/includes/config.php</code></small>
         </div>
     </div>
 </body>
