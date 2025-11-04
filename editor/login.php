@@ -1,21 +1,22 @@
 <?php
 /**
- * Neofox Media Visual Editor - Login Page (Bulletproof Version)
- * Uses output buffering to prevent "headers already sent" errors
+ * Login with Database-Based Sessions (Fixes session persistence issues)
  */
 
-// Start output buffering FIRST to catch any accidental output
+// Start output buffering
 ob_start();
 
-// Configure session BEFORE starting it
-ini_set('session.cookie_lifetime', 86400);
-ini_set('session.gc_maxlifetime', 86400);
-session_set_cookie_params(86400);
+// Load session handler FIRST
+require_once __DIR__ . '/includes/session-handler.php';
 
-// Start session
+// Initialize database sessions
+$sessionDbPath = __DIR__ . '/database/sessions.db';
+initDatabaseSessions($sessionDbPath);
+
+// Now start the session
 session_start();
 
-// Clean the output buffer and turn off output buffering
+// Clean buffer
 ob_end_clean();
 
 // Load config
@@ -23,12 +24,13 @@ require_once __DIR__ . '/includes/config.php';
 
 $error = '';
 
-// Already logged in? Redirect to dashboard
+// Start new buffer for HTML output
+ob_start();
+
+// Already logged in?
 if (isset($_SESSION['editor_logged_in']) && $_SESSION['editor_logged_in'] === true) {
-    // Start output buffering before redirect
-    ob_start();
+    ob_end_clean();
     header('Location: dashboard.php');
-    ob_end_flush();
     exit;
 }
 
@@ -59,10 +61,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
         @file_put_contents($logFile, $logEntry . PHP_EOL, FILE_APPEND);
 
-        // Redirect to dashboard
-        ob_start();
+        // Redirect
+        ob_end_clean();
         header('Location: dashboard.php');
-        ob_end_flush();
         exit;
     } else {
         $error = 'Invalid username or password';
@@ -74,9 +75,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Neofox Visual Editor</title>
+    <title>Login - Neofox Visual Editor (DB Sessions)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="icon" href="../images/favicon.png" type="image/png">
     <style>
         * {
             margin: 0;
@@ -110,12 +110,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: white;
         }
 
-        .login-header img {
-            max-width: 200px;
-            margin-bottom: 20px;
-            filter: brightness(0) invert(1);
-        }
-
         .login-header h1 {
             font-size: 28px;
             font-weight: 700;
@@ -125,6 +119,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .login-header p {
             font-size: 14px;
             opacity: 0.9;
+        }
+
+        .badge {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 11px;
+            margin-top: 10px;
+            display: inline-block;
         }
 
         .login-body {
@@ -201,33 +204,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
         }
 
-        .login-footer {
-            padding: 20px 30px;
-            background: #f8f9fa;
-            text-align: center;
-            font-size: 13px;
-            color: #666;
-        }
-
-        .feature-list {
-            list-style: none;
-            padding: 20px 0 0;
-        }
-
-        .feature-list li {
-            padding: 10px 0;
-            color: #666;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .feature-list li i {
-            color: #667eea;
-            font-size: 16px;
-        }
-
         .credentials-box {
             background: #eff6ff;
             border: 1px solid #bfdbfe;
@@ -251,27 +227,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 12px;
         }
 
-        @media (max-width: 480px) {
-            .login-container {
-                border-radius: 0;
-            }
-
-            .login-header {
-                padding: 30px 20px;
-            }
-
-            .login-body {
-                padding: 30px 20px;
-            }
+        .info-box {
+            background: #dcfce7;
+            border: 1px solid #86efac;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 15px;
+            font-size: 12px;
+            color: #166534;
         }
     </style>
 </head>
 <body>
     <div class="login-container">
         <div class="login-header">
-            <img src="../images/neofox-web-logo2.png" alt="Neofox Media" onerror="this.style.display='none'">
-            <h1>Visual Editor</h1>
+            <h1>🦊 Visual Editor</h1>
             <p>Powerful, Intuitive, Easy to Use</p>
+            <div class="badge">✓ Database Sessions Enabled</div>
         </div>
 
         <div class="login-body">
@@ -312,17 +284,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Password: <code>password</code>
             </div>
 
-            <ul class="feature-list">
-                <li><i class="fas fa-check-circle"></i> Drag & Drop Page Builder</li>
-                <li><i class="fas fa-check-circle"></i> Advanced Animations & Effects</li>
-                <li><i class="fas fa-check-circle"></i> Easy Media Management</li>
-                <li><i class="fas fa-check-circle"></i> Real-time Preview</li>
-            </ul>
-        </div>
-
-        <div class="login-footer">
-            <strong>⚠️ Important:</strong> Change default credentials after first login!<br>
-            <small>Edit: <code>editor/includes/config.php</code></small>
+            <div class="info-box">
+                <strong>ℹ️ This version uses database-based sessions</strong><br>
+                Fixes session persistence issues on shared hosting servers.
+            </div>
         </div>
     </div>
 </body>
