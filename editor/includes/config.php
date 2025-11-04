@@ -4,6 +4,12 @@
  * Update these settings for your environment
  */
 
+// Path Configuration
+define('BASE_PATH', dirname(dirname(__DIR__))); // Root of website
+define('EDITOR_PATH', __DIR__ . '/..');
+define('UPLOAD_PATH', BASE_PATH . '/images/');
+define('BACKUP_PATH', EDITOR_PATH . '/backups/');
+
 // Database Configuration (SQLite for simplicity on shared hosting)
 define('DB_PATH', __DIR__ . '/../database/editor.db');
 

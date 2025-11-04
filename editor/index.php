@@ -14,11 +14,8 @@ session_start();
 
 // Configuration
 define('EDITOR_VERSION', '1.0.0');
-define('BASE_PATH', dirname(__DIR__));
-define('UPLOAD_PATH', BASE_PATH . '/images/');
-define('BACKUP_PATH', BASE_PATH . '/editor/backups/');
 
-// Simple authentication (change credentials in config.php)
+// Load configuration (defines paths and settings)
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/functions.php';
 
