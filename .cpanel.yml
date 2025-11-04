@@ -4,7 +4,7 @@
 
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/username/public_html/
+    - export DEPLOYPATH=/home2/sunburni/public_html/neofox/nfmw
     - /bin/cp -R * $DEPLOYPATH
     - /bin/cp -R .htaccess $DEPLOYPATH
     - /bin/chmod 755 $DEPLOYPATH/editor
