@@ -1,7 +1,11 @@
 <?php
 /**
- * Neofox Media Visual Editor - Login Page (Fixed)
+ * Neofox Media Visual Editor - Login Page (Bulletproof Version)
+ * Uses output buffering to prevent "headers already sent" errors
  */
+
+// Start output buffering FIRST to catch any accidental output
+ob_start();
 
 // Configure session BEFORE starting it
 ini_set('session.cookie_lifetime', 86400);
@@ -11,6 +15,9 @@ session_set_cookie_params(86400);
 // Start session
 session_start();
 
+// Clean the output buffer and turn off output buffering
+ob_end_clean();
+
 // Load config
 require_once __DIR__ . '/includes/config.php';
 
@@ -18,7 +25,10 @@ $error = '';
 
 // Already logged in? Redirect to dashboard
 if (isset($_SESSION['editor_logged_in']) && $_SESSION['editor_logged_in'] === true) {
+    // Start output buffering before redirect
+    ob_start();
     header('Location: dashboard.php');
+    ob_end_flush();
     exit;
 }
 
@@ -50,7 +60,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         @file_put_contents($logFile, $logEntry . PHP_EOL, FILE_APPEND);
 
         // Redirect to dashboard
+        ob_start();
         header('Location: dashboard.php');
+        ob_end_flush();
         exit;
     } else {
         $error = 'Invalid username or password';
