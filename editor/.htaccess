@@ -1,0 +1,51 @@
+# Neofox Media Visual Editor - Security Configuration
+
+# Deny access to sensitive files
+<FilesMatch "\.(db|sqlite|log|bak)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Protect config files
+<Files "config.php">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Protect database directory
+<DirectoryMatch "database">
+    Order allow,deny
+    Deny from all
+</DirectoryMatch>
+
+# Protect backups directory from direct access
+<DirectoryMatch "backups">
+    Order allow,deny
+    Deny from all
+</DirectoryMatch>
+
+# Protect logs directory
+<DirectoryMatch "logs">
+    Order allow,deny
+    Deny from all
+</DirectoryMatch>
+
+# Allow access to assets
+<DirectoryMatch "assets">
+    Order allow,deny
+    Allow from all
+</DirectoryMatch>
+
+# Session security
+<IfModule mod_php7.c>
+    php_flag session.cookie_httponly on
+    php_flag session.cookie_secure on
+    php_flag session.use_only_cookies on
+</IfModule>
+
+# Prevent directory browsing
+Options -Indexes
+
+# Enable error logging (not display)
+php_flag display_errors off
+php_flag log_errors on

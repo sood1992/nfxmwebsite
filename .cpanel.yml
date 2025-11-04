@@ -1,0 +1,17 @@
+---
+# cPanel Deployment Configuration
+# Neofox Media Website - Git Deployment for Bluehost
+
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/username/public_html/
+    - /bin/cp -R * $DEPLOYPATH
+    - /bin/cp -R .htaccess $DEPLOYPATH
+    - /bin/chmod 755 $DEPLOYPATH/editor
+    - /bin/chmod 755 $DEPLOYPATH/images
+    - /bin/chmod -R 755 $DEPLOYPATH/editor/database
+    - /bin/chmod -R 755 $DEPLOYPATH/editor/backups
+    - /bin/chmod -R 755 $DEPLOYPATH/editor/logs
+    - /bin/chmod 644 $DEPLOYPATH/.htaccess
+    - /bin/chmod 644 $DEPLOYPATH/editor/.htaccess
+    - echo "Deployment completed successfully!"
