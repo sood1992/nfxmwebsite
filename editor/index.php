@@ -23,6 +23,17 @@ if (!isset($_SESSION['editor_logged_in'])) {
     exit;
 }
 
+// Redirect to dashboard if no page specified (first time users)
+if (!isset($_GET['page']) && !isset($_GET['tab'])) {
+    // Check if it's first time - show dashboard
+    $firstTime = getSetting('first_time_user', 'true');
+    if ($firstTime === 'true') {
+        setSetting('first_time_user', 'false');
+    }
+    header('Location: dashboard.php');
+    exit;
+}
+
 // Get available pages
 $pages = getAvailablePages();
 $current_page = isset($_GET['page']) ? $_GET['page'] : 'index.html';
