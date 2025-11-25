@@ -37,11 +37,14 @@ const AuthenticatedLayout = ({ children }) => (
   </div>
 );
 
+// Base path for deployment (matches vite.config.js base)
+const basename = '/magicbrief-insights/dist';
+
 function App() {
   return (
     <AuthProvider>
       <AppProvider>
-        <Router>
+        <Router basename={basename}>
           <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
