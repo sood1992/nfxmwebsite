@@ -169,6 +169,7 @@ export const AppProvider = ({ children }) => {
           adInsightsCount: data.adInsights?.length || 0,
           campaignsCount: data.campaigns?.length || 0,
           adSetsCount: data.adSets?.length || 0,
+          adsCount: data.ads?.length || 0,
         });
 
         // Update performance metrics
@@ -205,14 +206,62 @@ export const AppProvider = ({ children }) => {
           setDailyData(data.dailyData);
         }
 
-        // Update creatives from ad insights
+        // Create a map of insights by ad ID for quick lookup
+        const insightsMap = new Map();
         if (data.adInsights?.length > 0) {
-          console.log('[AppContext] Setting creatives from', data.adInsights.length, 'ad insights');
+          data.adInsights.forEach(insight => {
+            insightsMap.set(insight.adId, insight);
+          });
+        }
+
+        // Merge ads with their insights (show all ads, even without insights for the period)
+        if (data.ads?.length > 0) {
+          console.log('[AppContext] Merging', data.ads.length, 'ads with', insightsMap.size, 'insights');
+          const formattedCreatives = data.ads.map((ad, index) => {
+            const insight = insightsMap.get(ad.id) || {};
+            const hasInsights = !!insight.adId;
+
+            return {
+              id: ad.id || index + 1,
+              name: ad.name || `Ad ${index + 1}`,
+              thumbnail: ad.creative?.thumbnail_url || null,
+              type: ad.creative?.asset_feed_spec ? 'Video' : 'Image',
+              headline: ad.name,
+              adsCount: 1,
+              spend: insight.spend || 0,
+              hookScore: insight.hookScore || null,
+              thumbstop: insight.thumbstop || null,
+              firstFrameRetention: insight.firstFrameRetention || null,
+              holdScore: insight.holdScore || null,
+              clickScore: insight.clickScore || null,
+              buyScore: insight.buyScore || null,
+              roas: insight.roas || null,
+              purchases: insight.purchases || 0,
+              aov: insight.aov || null,
+              cpm: insight.cpm || 0,
+              cpc: insight.cpc || 0,
+              ctr: insight.ctr || 0,
+              impressions: insight.impressions || 0,
+              clicks: insight.clicks || 0,
+              status: ad.effective_status || ad.status || 'Unknown',
+              campaignName: insight.campaignName || '',
+              adSetName: insight.adSetName || '',
+              campaignId: ad.campaign_id,
+              adSetId: ad.adset_id,
+              hasInsights, // Flag to indicate if this ad has insights for the selected period
+              createdTime: ad.created_time,
+            };
+          });
+          setCreativesData(formattedCreatives);
+          console.log('[AppContext] Set', formattedCreatives.length, 'creatives (', formattedCreatives.filter(c => c.hasInsights).length, 'with insights)');
+        } else if (data.adInsights?.length > 0) {
+          // Fallback: if no ads data but we have insights, use insights directly
+          console.log('[AppContext] No ads data, using insights directly:', data.adInsights.length);
           const formattedCreatives = data.adInsights.map((insight, index) => ({
             id: insight.adId || index + 1,
             name: insight.adName || `Ad ${index + 1}`,
-            thumbnail: null, // Would need separate API call for thumbnails
-            type: 'Video', // Default, would need creative API for actual type
+            thumbnail: null,
+            type: 'Video',
             headline: insight.adName,
             adsCount: 1,
             spend: insight.spend,
@@ -233,11 +282,11 @@ export const AppProvider = ({ children }) => {
             status: 'Active',
             campaignName: insight.campaignName,
             adSetName: insight.adSetName,
+            hasInsights: true,
           }));
           setCreativesData(formattedCreatives);
         } else {
-          console.log('[AppContext] No ad insights returned - this account may have no ads running in the selected date range');
-          // Set empty array instead of falling back to mock data for real accounts
+          console.log('[AppContext] No ads or insights returned - this account may have no ads');
           setCreativesData([]);
         }
 

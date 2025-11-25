@@ -120,54 +120,48 @@ class MetaApiService {
     return statuses[statusCode] || 'Unknown';
   }
 
-  // Get campaigns for an ad account
-  async getCampaigns(accountId, dateRange) {
-    const { since, until } = this.getDateRange(dateRange);
-
+  // Get campaigns for an ad account (no time_range - returns all campaigns)
+  async getCampaigns(accountId) {
     try {
       const data = await this.request(`/${accountId}/campaigns`, {
         fields: 'id,name,status,objective,effective_status,created_time,updated_time',
-        time_range: JSON.stringify({ since, until }),
         limit: 100,
       });
 
-      return data.data || [];
+      console.log('[MetaAPI] Campaigns response:', data?.data?.length || 0, 'campaigns');
+      return data?.data || [];
     } catch (error) {
       console.error('Error fetching campaigns:', error);
       return [];
     }
   }
 
-  // Get ad sets for an ad account
-  async getAdSets(accountId, dateRange) {
-    const { since, until } = this.getDateRange(dateRange);
-
+  // Get ad sets for an ad account (no time_range - returns all ad sets)
+  async getAdSets(accountId) {
     try {
       const data = await this.request(`/${accountId}/adsets`, {
         fields: 'id,name,status,campaign_id,effective_status,optimization_goal,billing_event,daily_budget,lifetime_budget',
-        time_range: JSON.stringify({ since, until }),
         limit: 100,
       });
 
-      return data.data || [];
+      console.log('[MetaAPI] Ad sets response:', data?.data?.length || 0, 'ad sets');
+      return data?.data || [];
     } catch (error) {
       console.error('Error fetching ad sets:', error);
       return [];
     }
   }
 
-  // Get ads for an ad account
-  async getAds(accountId, dateRange) {
-    const { since, until } = this.getDateRange(dateRange);
-
+  // Get ads for an ad account (no time_range - returns all ads)
+  async getAds(accountId) {
     try {
       const data = await this.request(`/${accountId}/ads`, {
         fields: 'id,name,status,effective_status,creative{id,name,thumbnail_url,object_story_spec,asset_feed_spec},adset_id,campaign_id,created_time',
-        time_range: JSON.stringify({ since, until }),
         limit: 100,
       });
 
-      return data.data || [];
+      console.log('[MetaAPI] Ads response:', data?.data?.length || 0, 'ads');
+      return data?.data || [];
     } catch (error) {
       console.error('Error fetching ads:', error);
       return [];
@@ -462,13 +456,25 @@ class MetaApiService {
   // Get all data for an account (comprehensive fetch)
   async getAllAccountData(accountId, dateRange) {
     try {
-      const [summary, dailyData, adInsights, campaigns, adSets] = await Promise.all([
+      // Fetch insights with date range filter
+      // Fetch campaigns, ad sets, and ads WITHOUT date range (get all)
+      const [summary, dailyData, adInsights, campaigns, adSets, ads] = await Promise.all([
         this.getAccountSummary(accountId, dateRange),
         this.getInsightsByDay(accountId, dateRange),
         this.getAdInsights(accountId, dateRange),
-        this.getCampaigns(accountId, dateRange),
-        this.getAdSets(accountId, dateRange),
+        this.getCampaigns(accountId),
+        this.getAdSets(accountId),
+        this.getAds(accountId),
       ]);
+
+      console.log('[MetaAPI] getAllAccountData results:', {
+        hasSummary: !!summary,
+        dailyDataCount: dailyData?.length || 0,
+        adInsightsCount: adInsights?.length || 0,
+        campaignsCount: campaigns?.length || 0,
+        adSetsCount: adSets?.length || 0,
+        adsCount: ads?.length || 0,
+      });
 
       return {
         summary,
@@ -476,6 +482,7 @@ class MetaApiService {
         adInsights,
         campaigns,
         adSets,
+        ads,
       };
     } catch (error) {
       console.error('Error fetching all account data:', error);
