@@ -28,13 +28,22 @@ class MetaApiService {
     if (useCache && this.cache.has(cacheKey)) {
       const cached = this.cache.get(cacheKey);
       if (Date.now() - cached.timestamp < this.cacheExpiry) {
+        console.log('[MetaAPI] Returning cached data for:', endpoint);
         return cached.data;
       }
     }
 
     const token = metaAuth.getAccessToken();
+    console.log('[MetaAPI] Making request:', endpoint, { hasToken: !!token, tokenPreview: token?.substring(0, 20) + '...' });
+
     if (!token) {
       throw new Error('Not authenticated');
+    }
+
+    // Check if this is a demo token
+    if (token === 'demo_token') {
+      console.log('[MetaAPI] Demo token detected - skipping API call');
+      return null;
     }
 
     const queryParams = new URLSearchParams({
@@ -42,11 +51,18 @@ class MetaApiService {
       ...params,
     });
 
+    const url = `${GRAPH_API_URL}${endpoint}?${queryParams}`;
+    console.log('[MetaAPI] Fetching URL:', url.replace(token, 'TOKEN_HIDDEN'));
+
     try {
-      const response = await fetch(`${GRAPH_API_URL}${endpoint}?${queryParams}`);
+      const response = await fetch(url);
       const data = await response.json();
 
+      console.log('[MetaAPI] Response status:', response.status);
+      console.log('[MetaAPI] Response data:', data);
+
       if (data.error) {
+        console.error('[MetaAPI] API Error:', data.error);
         throw new Error(data.error.message);
       }
 
@@ -56,7 +72,7 @@ class MetaApiService {
 
       return data;
     } catch (error) {
-      console.error('API Request Error:', error);
+      console.error('[MetaAPI] Request Error:', error);
       throw error;
     }
   }

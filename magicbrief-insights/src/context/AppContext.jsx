@@ -109,30 +109,71 @@ export const AppProvider = ({ children }) => {
   // Update selected account when connected accounts change
   useEffect(() => {
     if (connectedAccounts?.length > 0) {
+      console.log('[AppContext] Connected accounts updated:', connectedAccounts);
       setSelectedAccount(connectedAccounts[0]);
     }
   }, [connectedAccounts]);
 
+  // Get the account ID to use for API calls (handle both real and demo accounts)
+  const getAccountIdForApi = useCallback((account) => {
+    // Real Meta accounts have accountId in "act_xxxxx" format
+    // Demo/mock accounts might only have id
+    return account?.accountId || (account?.id ? `act_${account.id}` : null);
+  }, []);
+
+  // Check if this is a demo/mock account (not a real Meta account)
+  const isDemoAccount = useCallback((account) => {
+    // Demo accounts don't have accountId property or their id is a simple number
+    return !account?.accountId || account?.id === 'demo_user';
+  }, []);
+
   // Fetch data when account or date range changes
   useEffect(() => {
-    if (isAuthenticated && selectedAccount?.accountId) {
+    const accountIdForApi = getAccountIdForApi(selectedAccount);
+    console.log('[AppContext] Auth status check:', {
+      isAuthenticated,
+      selectedAccount,
+      accountIdForApi,
+      isDemoAccount: isDemoAccount(selectedAccount)
+    });
+
+    if (isAuthenticated && accountIdForApi && !isDemoAccount(selectedAccount)) {
+      console.log('[AppContext] Triggering fetchAccountData for:', accountIdForApi);
       fetchAccountData();
+    } else if (isDemoAccount(selectedAccount)) {
+      console.log('[AppContext] Using demo/mock data - not fetching from API');
     }
   }, [isAuthenticated, selectedAccount, dateRange]);
 
   // Fetch all account data from Meta API
   const fetchAccountData = useCallback(async () => {
-    if (!selectedAccount?.accountId) return;
+    const accountIdForApi = getAccountIdForApi(selectedAccount);
+    if (!accountIdForApi) {
+      console.log('[AppContext] No account ID available for API call');
+      return;
+    }
 
     setIsLoading(true);
     setDataError(null);
 
+    console.log('[AppContext] Fetching data for account:', accountIdForApi, 'dateRange:', dateRange);
+
     try {
-      const data = await metaApi.getAllAccountData(selectedAccount.accountId, dateRange);
+      const data = await metaApi.getAllAccountData(accountIdForApi, dateRange);
+      console.log('[AppContext] API response:', data);
 
       if (data) {
+        console.log('[AppContext] Processing API data:', {
+          hasSummary: !!data.summary,
+          dailyDataCount: data.dailyData?.length || 0,
+          adInsightsCount: data.adInsights?.length || 0,
+          campaignsCount: data.campaigns?.length || 0,
+          adSetsCount: data.adSets?.length || 0,
+        });
+
         // Update performance metrics
         if (data.summary) {
+          console.log('[AppContext] Setting performance metrics from summary:', data.summary);
           setPerformanceMetrics({
             spend: {
               value: data.summary.spend,
@@ -155,15 +196,18 @@ export const AppProvider = ({ children }) => {
               chartData: data.dailyData?.map(d => ({ date: d.date, value: d.ctr })) || [],
             },
           });
+        } else {
+          console.log('[AppContext] No summary data - keeping default metrics');
         }
 
         // Update daily data for charts
-        if (data.dailyData) {
+        if (data.dailyData?.length > 0) {
           setDailyData(data.dailyData);
         }
 
         // Update creatives from ad insights
         if (data.adInsights?.length > 0) {
+          console.log('[AppContext] Setting creatives from', data.adInsights.length, 'ad insights');
           const formattedCreatives = data.adInsights.map((insight, index) => ({
             id: insight.adId || index + 1,
             name: insight.adName || `Ad ${index + 1}`,
@@ -191,6 +235,10 @@ export const AppProvider = ({ children }) => {
             adSetName: insight.adSetName,
           }));
           setCreativesData(formattedCreatives);
+        } else {
+          console.log('[AppContext] No ad insights returned - this account may have no ads running in the selected date range');
+          // Set empty array instead of falling back to mock data for real accounts
+          setCreativesData([]);
         }
 
         // Update campaigns and ad sets
@@ -199,13 +247,26 @@ export const AppProvider = ({ children }) => {
 
         // Generate recommendations based on data
         generateRecommendations(data);
+      } else {
+        console.log('[AppContext] No data returned from API');
+        setCreativesData([]);
       }
     } catch (error) {
-      console.error('Error fetching account data:', error);
+      console.error('[AppContext] Error fetching account data:', error);
+      console.error('[AppContext] Error details:', {
+        message: error.message,
+        stack: error.stack,
+        accountId: accountIdForApi,
+      });
       setDataError(error.message);
-      // Fall back to mock data on error
-      setCreativesData(mockCreatives);
-      setPerformanceMetrics(mockPerformanceMetrics);
+      // Keep empty data on error for real accounts (don't show mock data)
+      setCreativesData([]);
+      setPerformanceMetrics({
+        spend: { value: 0, currency: '₹', chartData: [] },
+        cpm: { value: 0, currency: '₹', chartData: [] },
+        cpc: { value: 0, currency: '₹', chartData: [] },
+        ctr: { value: 0, unit: '%', chartData: [] },
+      });
     } finally {
       setIsLoading(false);
     }
