@@ -1,0 +1,32 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /magicbrief-insights/dist/
+
+  # If the request is not for a file that exists
+  RewriteCond %{REQUEST_FILENAME} !-f
+  # And the request is not for a directory that exists
+  RewriteCond %{REQUEST_FILENAME} !-d
+  # Rewrite everything to index.html
+  RewriteRule ^ index.html [QSA,L]
+</IfModule>
+
+# Enable CORS
+<IfModule mod_headers.c>
+  Header set Access-Control-Allow-Origin "*"
+</IfModule>
+
+# Caching for static assets
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+</IfModule>
+
+# Prevent directory listing
+Options -Indexes
+
+# Error document
+ErrorDocument 404 /magicbrief-insights/dist/index.html
