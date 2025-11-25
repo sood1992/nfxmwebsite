@@ -3,6 +3,69 @@
   margin: 0 auto;
 }
 
+/* Status Banners */
+.status-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-lg);
+  font-size: 14px;
+}
+
+.status-banner.loading {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #7dd3fc;
+}
+
+.status-banner.error {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+
+.status-banner.warning {
+  background-color: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fcd34d;
+}
+
+.status-banner.info {
+  background-color: #f0f9ff;
+  color: #0284c7;
+  border: 1px solid #7dd3fc;
+}
+
+.status-banner .spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.status-banner .retry-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding: 4px 12px;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-sm);
+  color: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.status-banner .retry-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
 /* Action Cards */
 .action-cards {
   display: grid;

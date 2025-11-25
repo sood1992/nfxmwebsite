@@ -9,14 +9,21 @@ import {
   TrendingUp,
   TrendingDown,
   Lightbulb,
+  Loader,
+  RefreshCw,
 } from 'lucide-react';
 import { MetricCard, ScoreCard } from '../components/Shared';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
 
 const Dashboard = () => {
-  const { getDateRangeLabel, settings, performanceMetrics, scoreMetrics, recommendations, isLoading } = useApp();
+  const { getDateRangeLabel, settings, performanceMetrics, scoreMetrics, recommendations, isLoading, dataError, refreshData, selectedAccount } = useApp();
+  const { connectedAccounts } = useAuth();
   const [showMetricsModal, setShowMetricsModal] = useState(false);
+
+  // Check if we have real data
+  const hasRealData = performanceMetrics?.spend?.value > 0 || performanceMetrics?.spend?.chartData?.length > 0;
 
   const actionCards = [
     {
@@ -64,6 +71,47 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard-page">
+      {/* Status Banner */}
+      {isLoading && (
+        <div className="status-banner loading">
+          <Loader size={18} className="spin" />
+          <span>Loading data from Meta...</span>
+        </div>
+      )}
+
+      {dataError && (
+        <div className="status-banner error">
+          <AlertCircle size={18} />
+          <span>Error loading data: {dataError}</span>
+          <button onClick={refreshData} className="retry-btn">
+            <RefreshCw size={14} />
+            Retry
+          </button>
+        </div>
+      )}
+
+      {!isLoading && !dataError && !hasRealData && selectedAccount && (
+        <div className="status-banner warning">
+          <AlertCircle size={18} />
+          <span>
+            No ad data found for "{selectedAccount.name}".
+            {selectedAccount.accountId ? ` (${selectedAccount.accountId})` : ''}
+            {' '}This account may have no active ads in the selected date range.
+          </span>
+          <button onClick={refreshData} className="retry-btn">
+            <RefreshCw size={14} />
+            Refresh
+          </button>
+        </div>
+      )}
+
+      {!isLoading && !dataError && connectedAccounts?.length === 0 && (
+        <div className="status-banner info">
+          <AlertCircle size={18} />
+          <span>No ad accounts connected. Please connect your Meta ad account to see your data.</span>
+        </div>
+      )}
+
       {/* Action Cards */}
       <div className="action-cards">
         {actionCards.map((card, index) => (

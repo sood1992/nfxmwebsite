@@ -29,6 +29,10 @@ export const AuthProvider = ({ children }) => {
     setIsLoading(true);
     try {
       const authenticated = metaAuth.isAuthenticated();
+      const token = metaAuth.getAccessToken();
+      const isRealToken = token && token !== 'demo_token';
+
+      console.log('[AuthContext] Auth check:', { authenticated, isRealToken, tokenPreview: token?.substring(0, 20) });
       setIsAuthenticated(authenticated);
 
       if (authenticated) {
@@ -38,14 +42,28 @@ export const AuthProvider = ({ children }) => {
         // Load connected accounts from localStorage
         const savedAccounts = localStorage.getItem('meta_ad_accounts');
         if (savedAccounts) {
-          setConnectedAccounts(JSON.parse(savedAccounts));
-        } else {
-          // Fetch accounts from API
+          const parsedAccounts = JSON.parse(savedAccounts);
+          console.log('[AuthContext] Loaded accounts from localStorage:', parsedAccounts);
+
+          // Validate that accounts have proper accountId (for real Meta accounts)
+          const hasValidAccounts = parsedAccounts.some(acc => acc.accountId && acc.accountId.startsWith('act_'));
+
+          if (isRealToken && !hasValidAccounts) {
+            // Real token but stale/invalid accounts - refetch from API
+            console.log('[AuthContext] Accounts missing accountId, refetching from API...');
+            localStorage.removeItem('meta_ad_accounts');
+            await fetchAdAccounts();
+          } else {
+            setConnectedAccounts(parsedAccounts);
+          }
+        } else if (isRealToken) {
+          // No saved accounts and real token - fetch from API
+          console.log('[AuthContext] No saved accounts, fetching from API...');
           await fetchAdAccounts();
         }
       }
     } catch (err) {
-      console.error('Auth check error:', err);
+      console.error('[AuthContext] Auth check error:', err);
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -54,13 +72,23 @@ export const AuthProvider = ({ children }) => {
 
   // Fetch ad accounts from Meta API
   const fetchAdAccounts = async () => {
+    console.log('[AuthContext] Fetching ad accounts from Meta API...');
     try {
       const accounts = await metaApi.getAdAccounts();
-      setConnectedAccounts(accounts);
-      localStorage.setItem('meta_ad_accounts', JSON.stringify(accounts));
+      console.log('[AuthContext] Fetched accounts:', accounts);
+
+      if (accounts && accounts.length > 0) {
+        setConnectedAccounts(accounts);
+        localStorage.setItem('meta_ad_accounts', JSON.stringify(accounts));
+        console.log('[AuthContext] Saved', accounts.length, 'accounts to localStorage');
+      } else {
+        console.log('[AuthContext] No ad accounts returned from API - user may not have any ad accounts');
+        setConnectedAccounts([]);
+      }
       return accounts;
     } catch (err) {
-      console.error('Error fetching ad accounts:', err);
+      console.error('[AuthContext] Error fetching ad accounts:', err);
+      setError(`Failed to fetch ad accounts: ${err.message}`);
       return [];
     }
   };
