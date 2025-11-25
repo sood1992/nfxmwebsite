@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   BarChart2,
@@ -21,22 +21,29 @@ import {
   Layers,
   ChevronLeft,
   ChevronRight,
+  LogOut,
+  User,
+  Link2,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
 import './Sidebar.css';
 
 const Sidebar = () => {
   const { selectedAccount, setSelectedAccount, adAccounts } = useApp();
+  const { user, logout, connectedAccounts } = useAuth();
   const [isReportsOpen, setIsReportsOpen] = useState(true);
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const mainNavItems = [
     { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/overview', icon: BarChart2, label: 'Overview' },
     { path: '/compare', icon: GitCompare, label: 'Compare' },
-    { path: '/copilot', icon: Bot, label: 'Copilot' },
+    { path: '/copilot', icon: Bot, label: 'Copilot', badge: 'Beta' },
   ];
 
   const reportItems = [
@@ -51,6 +58,13 @@ const Sidebar = () => {
     { path: '/reports/top-landing-page', icon: Monitor, label: 'Top Landing Page' },
     { path: '/reports/compare-formats', icon: Layers, label: 'Compare Formats' },
   ];
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const accounts = connectedAccounts?.length > 0 ? connectedAccounts : adAccounts;
 
   return (
     <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
@@ -88,13 +102,13 @@ const Sidebar = () => {
           onClick={() => setIsAccountDropdownOpen(!isAccountDropdownOpen)}
         >
           <div className="account-icon" style={{ backgroundColor: '#FFD700' }}>
-            {selectedAccount.name.charAt(0)}
+            {selectedAccount?.name?.charAt(0) || 'A'}
           </div>
           {!isCollapsed && (
             <>
               <div className="account-info">
-                <span className="account-name">{selectedAccount.name}</span>
-                <span className="account-platform">{selectedAccount.platform}</span>
+                <span className="account-name">{selectedAccount?.name || 'Select Account'}</span>
+                <span className="account-platform">{selectedAccount?.platform || 'Connect an account'}</span>
               </div>
               <ChevronDown size={16} className={`chevron ${isAccountDropdownOpen ? 'open' : ''}`} />
             </>
@@ -103,24 +117,54 @@ const Sidebar = () => {
 
         {isAccountDropdownOpen && !isCollapsed && (
           <div className="account-dropdown">
-            {adAccounts.map((account) => (
+            {accounts?.length > 0 ? (
+              <>
+                {accounts.map((account) => (
+                  <button
+                    key={account.id}
+                    className={`account-option ${selectedAccount?.id === account.id ? 'active' : ''}`}
+                    onClick={() => {
+                      setSelectedAccount(account);
+                      setIsAccountDropdownOpen(false);
+                    }}
+                  >
+                    <div className="account-icon small" style={{ backgroundColor: '#FFD700' }}>
+                      {account.name?.charAt(0) || 'A'}
+                    </div>
+                    <div className="account-info">
+                      <span className="account-name">{account.name}</span>
+                      <span className="account-platform">{account.platform}</span>
+                    </div>
+                  </button>
+                ))}
+                <div className="dropdown-divider" />
+                <button
+                  className="account-option add-account"
+                  onClick={() => {
+                    setIsAccountDropdownOpen(false);
+                    navigate('/connect-accounts');
+                  }}
+                >
+                  <div className="account-icon small add">
+                    <Plus size={14} />
+                  </div>
+                  <span>Connect New Account</span>
+                </button>
+              </>
+            ) : (
               <button
-                key={account.id}
-                className={`account-option ${selectedAccount.id === account.id ? 'active' : ''}`}
+                className="account-option add-account"
                 onClick={() => {
-                  setSelectedAccount(account);
                   setIsAccountDropdownOpen(false);
+                  navigate('/connect-accounts');
                 }}
               >
-                <div className="account-icon small" style={{ backgroundColor: '#FFD700' }}>
-                  {account.name.charAt(0)}
+                <div className="account-icon small add">
+                  <Plus size={14} />
                 </div>
-                <div className="account-info">
-                  <span className="account-name">{account.name}</span>
-                  <span className="account-platform">{account.platform}</span>
-                </div>
+                <span>Connect Meta Account</span>
               </button>
-            ))}
+            )}
           </div>
         )}
       </div>
@@ -135,7 +179,12 @@ const Sidebar = () => {
                 className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
               >
                 <item.icon size={20} />
-                {!isCollapsed && <span>{item.label}</span>}
+                {!isCollapsed && (
+                  <>
+                    <span>{item.label}</span>
+                    {item.badge && <span className="nav-badge">{item.badge}</span>}
+                  </>
+                )}
               </NavLink>
             </li>
           ))}
@@ -185,6 +234,13 @@ const Sidebar = () => {
 
       {/* Footer */}
       <div className="sidebar-footer">
+        {/* Connect Accounts Link */}
+        <NavLink to="/connect-accounts" className="nav-link connect-link">
+          <Link2 size={20} />
+          {!isCollapsed && <span>Connected Accounts</span>}
+        </NavLink>
+
+        {/* Settings Link */}
         <NavLink to="/settings" className="nav-link settings-link">
           <Settings size={20} />
           {!isCollapsed && <span>Ad Account Settings</span>}
@@ -199,6 +255,36 @@ const Sidebar = () => {
             <button className="trial-btn">Select Plan</button>
           </div>
         )}
+
+        {/* User Menu */}
+        <div className="user-menu">
+          <button
+            className="user-button"
+            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+          >
+            <div className="user-avatar">
+              <User size={16} />
+            </div>
+            {!isCollapsed && (
+              <>
+                <div className="user-info">
+                  <span className="user-name">{user?.name || 'User'}</span>
+                  <span className="user-email">{user?.email || ''}</span>
+                </div>
+                <ChevronDown size={16} className={`chevron ${isUserMenuOpen ? 'open' : ''}`} />
+              </>
+            )}
+          </button>
+
+          {isUserMenuOpen && !isCollapsed && (
+            <div className="user-dropdown">
+              <button className="user-option" onClick={handleLogout}>
+                <LogOut size={16} />
+                <span>Log Out</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </aside>
   );

@@ -1,5 +1,16 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import { adAccounts, creatives, dateRanges, availableMetrics, adAccountSettings } from '../data/mockData';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { useAuth } from './AuthContext';
+import { metaApi } from '../services/metaApi';
+import {
+  adAccounts as mockAdAccounts,
+  creatives as mockCreatives,
+  dateRanges,
+  availableMetrics,
+  adAccountSettings,
+  performanceMetrics as mockPerformanceMetrics,
+  recommendations as mockRecommendations,
+  videoBreakdownData as mockVideoBreakdownData,
+} from '../data/mockData';
 
 const AppContext = createContext();
 
@@ -12,8 +23,17 @@ export const useApp = () => {
 };
 
 export const AppProvider = ({ children }) => {
+  const { isAuthenticated, connectedAccounts } = useAuth();
+
+  // Use connected accounts from Auth context, fallback to mock
+  const adAccounts = connectedAccounts?.length > 0 ? connectedAccounts : mockAdAccounts;
+
   // Account state
   const [selectedAccount, setSelectedAccount] = useState(adAccounts[0]);
+
+  // Loading states
+  const [isLoading, setIsLoading] = useState(false);
+  const [dataError, setDataError] = useState(null);
 
   // Date range state
   const [dateRange, setDateRange] = useState('last14days');
@@ -25,16 +45,21 @@ export const AppProvider = ({ children }) => {
   // Filters state
   const [filters, setFilters] = useState({
     delivery: 'Active',
-    creativeType: 'Video',
-    hookScoreMin: 70,
+    creativeType: 'All',
+    hookScoreMin: 0,
     status: 'All',
   });
 
   // Selected metrics state
   const [selectedMetrics, setSelectedMetrics] = useState(['spend', 'hookScore', 'thumbstop', 'firstFrameRetention']);
 
-  // Creatives state with filtering
-  const [creativesData, setCreativesData] = useState(creatives);
+  // Data states
+  const [creativesData, setCreativesData] = useState(mockCreatives);
+  const [performanceMetrics, setPerformanceMetrics] = useState(mockPerformanceMetrics);
+  const [recommendations, setRecommendations] = useState(mockRecommendations);
+  const [dailyData, setDailyData] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
+  const [adSets, setAdSets] = useState([]);
 
   // Selected creatives for comparison
   const [selectedCreatives, setSelectedCreatives] = useState([]);
@@ -52,6 +77,161 @@ export const AppProvider = ({ children }) => {
   // Settings
   const [settings, setSettings] = useState(adAccountSettings);
 
+  // Update selected account when connected accounts change
+  useEffect(() => {
+    if (connectedAccounts?.length > 0) {
+      setSelectedAccount(connectedAccounts[0]);
+    }
+  }, [connectedAccounts]);
+
+  // Fetch data when account or date range changes
+  useEffect(() => {
+    if (isAuthenticated && selectedAccount?.accountId) {
+      fetchAccountData();
+    }
+  }, [isAuthenticated, selectedAccount, dateRange]);
+
+  // Fetch all account data from Meta API
+  const fetchAccountData = useCallback(async () => {
+    if (!selectedAccount?.accountId) return;
+
+    setIsLoading(true);
+    setDataError(null);
+
+    try {
+      const data = await metaApi.getAllAccountData(selectedAccount.accountId, dateRange);
+
+      if (data) {
+        // Update performance metrics
+        if (data.summary) {
+          setPerformanceMetrics({
+            spend: {
+              value: data.summary.spend,
+              currency: selectedAccount.currency || '₹',
+              chartData: data.dailyData?.map(d => ({ date: d.date, value: d.spend })) || [],
+            },
+            cpm: {
+              value: data.summary.cpm,
+              currency: selectedAccount.currency || '₹',
+              chartData: data.dailyData?.map(d => ({ date: d.date, value: d.cpm })) || [],
+            },
+            cpc: {
+              value: data.summary.cpc,
+              currency: selectedAccount.currency || '₹',
+              chartData: data.dailyData?.map(d => ({ date: d.date, value: d.cpc })) || [],
+            },
+            ctr: {
+              value: data.summary.ctr,
+              unit: '%',
+              chartData: data.dailyData?.map(d => ({ date: d.date, value: d.ctr })) || [],
+            },
+          });
+        }
+
+        // Update daily data for charts
+        if (data.dailyData) {
+          setDailyData(data.dailyData);
+        }
+
+        // Update creatives from ad insights
+        if (data.adInsights?.length > 0) {
+          const formattedCreatives = data.adInsights.map((insight, index) => ({
+            id: insight.adId || index + 1,
+            name: insight.adName || `Ad ${index + 1}`,
+            thumbnail: null, // Would need separate API call for thumbnails
+            type: 'Video', // Default, would need creative API for actual type
+            headline: insight.adName,
+            adsCount: 1,
+            spend: insight.spend,
+            hookScore: insight.hookScore,
+            thumbstop: insight.thumbstop,
+            firstFrameRetention: insight.firstFrameRetention,
+            holdScore: insight.holdScore,
+            clickScore: insight.clickScore,
+            buyScore: insight.buyScore,
+            roas: insight.roas,
+            purchases: insight.purchases,
+            aov: insight.aov,
+            cpm: insight.cpm,
+            cpc: insight.cpc,
+            ctr: insight.ctr,
+            impressions: insight.impressions,
+            clicks: insight.clicks,
+            status: 'Active',
+            campaignName: insight.campaignName,
+            adSetName: insight.adSetName,
+          }));
+          setCreativesData(formattedCreatives);
+        }
+
+        // Update campaigns and ad sets
+        if (data.campaigns) setCampaigns(data.campaigns);
+        if (data.adSets) setAdSets(data.adSets);
+
+        // Generate recommendations based on data
+        generateRecommendations(data);
+      }
+    } catch (error) {
+      console.error('Error fetching account data:', error);
+      setDataError(error.message);
+      // Fall back to mock data on error
+      setCreativesData(mockCreatives);
+      setPerformanceMetrics(mockPerformanceMetrics);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedAccount, dateRange]);
+
+  // Generate AI-like recommendations based on data
+  const generateRecommendations = useCallback((data) => {
+    const newRecommendations = [];
+
+    if (data.adInsights?.length > 0) {
+      // Find best and worst performers
+      const sorted = [...data.adInsights].sort((a, b) => (b.hookScore || 0) - (a.hookScore || 0));
+      const topPerformer = sorted[0];
+      const lowPerformer = sorted[sorted.length - 1];
+
+      if (topPerformer?.hookScore > 80) {
+        newRecommendations.push({
+          id: 1,
+          type: 'insight',
+          title: 'Top Performer Identified',
+          message: `"${topPerformer.adName}" has a hook score of ${topPerformer.hookScore}. Consider scaling this creative.`,
+          priority: 'medium',
+        });
+      }
+
+      if (lowPerformer?.hookScore < 50) {
+        newRecommendations.push({
+          id: 2,
+          type: 'improvement',
+          title: 'Hook Performance Alert',
+          message: `"${lowPerformer.adName}" has a low hook score (${lowPerformer.hookScore}). Consider testing new opening frames.`,
+          priority: 'high',
+        });
+      }
+
+      // CTR analysis
+      const avgCtr = data.adInsights.reduce((sum, i) => sum + (i.ctr || 0), 0) / data.adInsights.length;
+      if (avgCtr < 1) {
+        newRecommendations.push({
+          id: 3,
+          type: 'warning',
+          title: 'Low CTR Detected',
+          message: `Average CTR is ${avgCtr.toFixed(2)}%. Consider improving ad copy or creative elements.`,
+          priority: 'high',
+        });
+      }
+    }
+
+    if (newRecommendations.length > 0) {
+      setRecommendations(newRecommendations);
+    } else {
+      setRecommendations(mockRecommendations);
+    }
+  }, []);
+
   // Filter creatives based on current filters
   const getFilteredCreatives = useCallback(() => {
     let filtered = [...creativesData];
@@ -64,8 +244,8 @@ export const AppProvider = ({ children }) => {
       filtered = filtered.filter(c => c.type === filters.creativeType);
     }
 
-    if (filters.hookScoreMin) {
-      filtered = filtered.filter(c => c.hookScore >= filters.hookScoreMin);
+    if (filters.hookScoreMin > 0) {
+      filtered = filtered.filter(c => (c.hookScore || 0) >= filters.hookScoreMin);
     }
 
     // Apply sorting
@@ -77,6 +257,19 @@ export const AppProvider = ({ children }) => {
 
     return filtered;
   }, [creativesData, filters, sortBy, sortOrder]);
+
+  // Get creatives by type
+  const getCreativesByType = useCallback((type) => {
+    return creativesData.filter(c => c.type === type);
+  }, [creativesData]);
+
+  // Get top creatives by metric
+  const getTopCreatives = useCallback((metric, limit = 10) => {
+    return [...creativesData]
+      .filter(c => c[metric] != null)
+      .sort((a, b) => (b[metric] || 0) - (a[metric] || 0))
+      .slice(0, limit);
+  }, [creativesData]);
 
   // Add metric to selection
   const addMetric = useCallback((metricId) => {
@@ -126,7 +319,10 @@ export const AppProvider = ({ children }) => {
     const range = dateRanges.find(r => r.value === dateRange);
     if (range) {
       if (dateRange === 'last14days') {
-        return 'Nov 11, 2025 - Nov 24, 2025';
+        const end = new Date();
+        const start = new Date();
+        start.setDate(start.getDate() - 14);
+        return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
       }
       return range.label;
     }
@@ -157,7 +353,18 @@ export const AppProvider = ({ children }) => {
     URL.revokeObjectURL(link.href);
   }, []);
 
+  // Refresh data
+  const refreshData = useCallback(() => {
+    metaApi.clearCache();
+    fetchAccountData();
+  }, [fetchAccountData]);
+
   const value = {
+    // Loading states
+    isLoading,
+    dataError,
+    refreshData,
+
     // Account
     selectedAccount,
     setSelectedAccount,
@@ -182,11 +389,14 @@ export const AppProvider = ({ children }) => {
     removeMetric,
     reorderMetrics,
     availableMetrics,
+    performanceMetrics,
 
     // Creatives
     creativesData,
     setCreativesData,
     getFilteredCreatives,
+    getCreativesByType,
+    getTopCreatives,
 
     // Selection
     selectedCreatives,
@@ -203,6 +413,12 @@ export const AppProvider = ({ children }) => {
     setSortBy,
     sortOrder,
     setSortOrder,
+
+    // Additional data
+    recommendations,
+    dailyData,
+    campaigns,
+    adSets,
 
     // Settings
     settings,
