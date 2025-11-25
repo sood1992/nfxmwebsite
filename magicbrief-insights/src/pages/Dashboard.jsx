@@ -11,12 +11,11 @@ import {
   Lightbulb,
 } from 'lucide-react';
 import { MetricCard, ScoreCard } from '../components/Shared';
-import { performanceMetrics, scoreMetrics, recommendations } from '../data/mockData';
 import { useApp } from '../context/AppContext';
 import './Dashboard.css';
 
 const Dashboard = () => {
-  const { getDateRangeLabel, settings } = useApp();
+  const { getDateRangeLabel, settings, performanceMetrics, scoreMetrics, recommendations, isLoading } = useApp();
   const [showMetricsModal, setShowMetricsModal] = useState(false);
 
   const actionCards = [

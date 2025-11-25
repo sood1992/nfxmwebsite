@@ -12,34 +12,38 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { performanceMetrics, creatives } from '../data/mockData';
 import { useApp } from '../context/AppContext';
 import './Overview.css';
 
 const Overview = () => {
-  const { settings, getDateRangeLabel } = useApp();
+  const { settings, getDateRangeLabel, performanceMetrics, creativesData } = useApp();
 
-  // Prepare trend data
-  const trendData = performanceMetrics.spend.chartData.map((item, index) => ({
+  // Use creatives from context (alias for backward compatibility)
+  const creatives = creativesData;
+
+  // Prepare trend data with null safety
+  const trendData = (performanceMetrics?.spend?.chartData || []).map((item, index) => ({
     date: item.date,
     spend: item.value,
     impressions: Math.round(item.value * 10),
     clicks: Math.round(item.value * 0.1),
-    ctr: performanceMetrics.ctr.chartData[index]?.value || 1.1,
+    ctr: performanceMetrics?.ctr?.chartData?.[index]?.value || 1.1,
   }));
 
-  const topPerformers = [...creatives]
+  const topPerformers = [...(creatives || [])]
+    .filter(c => c.hookScore != null)
     .sort((a, b) => b.hookScore - a.hookScore)
     .slice(0, 5);
 
-  const underperformers = [...creatives]
+  const underperformers = [...(creatives || [])]
+    .filter(c => c.hookScore != null)
     .sort((a, b) => a.hookScore - b.hookScore)
     .slice(0, 3);
 
   const summaryStats = [
     {
       label: 'Total Spend',
-      value: `${settings.currency}${(performanceMetrics.spend.value / 100000).toFixed(2)}L`,
+      value: `${settings.currency}${((performanceMetrics?.spend?.value || 0) / 100000).toFixed(2)}L`,
       change: '+12%',
       trend: 'up',
     },

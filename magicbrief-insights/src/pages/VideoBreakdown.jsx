@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Video, Clock, Play, Pause, SkipBack, SkipForward } from 'lucide-react';
 import {
   LineChart,
@@ -12,17 +12,27 @@ import {
   Legend,
 } from 'recharts';
 import { FilterBar } from '../components/Shared';
-import { videoBreakdownData, creatives } from '../data/mockData';
 import { useApp } from '../context/AppContext';
 import './VideoBreakdown.css';
 
 const VideoBreakdown = () => {
-  const { settings } = useApp();
-  const [selectedCreative, setSelectedCreative] = useState(creatives[0]);
+  const { settings, creativesData, videoBreakdownData } = useApp();
+
+  // Use creatives from context (alias for backward compatibility)
+  const creatives = creativesData;
+
+  const [selectedCreative, setSelectedCreative] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentSecond, setCurrentSecond] = useState(0);
 
   const videoCreatives = creatives.filter((c) => c.type === 'Video');
+
+  // Initialize selectedCreative when creatives data loads
+  useEffect(() => {
+    if (videoCreatives?.length > 0 && !selectedCreative) {
+      setSelectedCreative(videoCreatives[0]);
+    }
+  }, [videoCreatives, selectedCreative]);
 
   const handleCreativeSelect = (creative) => {
     setSelectedCreative(creative);

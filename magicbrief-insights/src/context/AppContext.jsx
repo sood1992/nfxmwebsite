@@ -10,6 +10,7 @@ import {
   performanceMetrics as mockPerformanceMetrics,
   recommendations as mockRecommendations,
   videoBreakdownData as mockVideoBreakdownData,
+  scoreMetrics as mockScoreMetrics,
 } from '../data/mockData';
 
 const AppContext = createContext();
@@ -60,6 +61,34 @@ export const AppProvider = ({ children }) => {
   const [dailyData, setDailyData] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [adSets, setAdSets] = useState([]);
+  const [videoBreakdownData, setVideoBreakdownData] = useState(mockVideoBreakdownData);
+
+  // Calculate aggregate score metrics from creatives data
+  const scoreMetrics = React.useMemo(() => {
+    if (!creativesData || creativesData.length === 0) {
+      return mockScoreMetrics;
+    }
+
+    const validHookScores = creativesData.filter(c => c.hookScore != null);
+    const validHoldScores = creativesData.filter(c => c.holdScore != null);
+    const validClickScores = creativesData.filter(c => c.clickScore != null);
+    const validBuyScores = creativesData.filter(c => c.buyScore != null);
+
+    return {
+      hookScore: validHookScores.length > 0
+        ? Math.round(validHookScores.reduce((sum, c) => sum + c.hookScore, 0) / validHookScores.length)
+        : null,
+      holdScore: validHoldScores.length > 0
+        ? Math.round(validHoldScores.reduce((sum, c) => sum + c.holdScore, 0) / validHoldScores.length)
+        : null,
+      clickScore: validClickScores.length > 0
+        ? Math.round(validClickScores.reduce((sum, c) => sum + c.clickScore, 0) / validClickScores.length)
+        : null,
+      buyScore: validBuyScores.length > 0
+        ? Math.round(validBuyScores.reduce((sum, c) => sum + c.buyScore, 0) / validBuyScores.length)
+        : null,
+    };
+  }, [creativesData]);
 
   // Selected creatives for comparison
   const [selectedCreatives, setSelectedCreatives] = useState([]);
@@ -419,6 +448,8 @@ export const AppProvider = ({ children }) => {
     dailyData,
     campaigns,
     adSets,
+    scoreMetrics,
+    videoBreakdownData,
 
     // Settings
     settings,

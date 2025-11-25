@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GitCompare, Plus, X, ArrowRight } from 'lucide-react';
 import {
   BarChart,
@@ -15,18 +15,25 @@ import {
   PolarRadiusAxis,
   Radar,
 } from 'recharts';
-import { creatives } from '../data/mockData';
 import { useApp } from '../context/AppContext';
 import './Compare.css';
 
 const Compare = () => {
-  const { settings } = useApp();
-  const [selectedCreatives, setSelectedCreatives] = useState([
-    creatives[0],
-    creatives[1],
-  ]);
+  const { settings, creativesData } = useApp();
+
+  // Use creatives from context (alias for backward compatibility)
+  const creatives = creativesData;
+
+  const [selectedCreatives, setSelectedCreatives] = useState([]);
   const [showSelector, setShowSelector] = useState(false);
   const [selectorIndex, setSelectorIndex] = useState(null);
+
+  // Initialize selectedCreatives when creatives data loads
+  useEffect(() => {
+    if (creatives?.length >= 2 && selectedCreatives.length === 0) {
+      setSelectedCreatives([creatives[0], creatives[1]]);
+    }
+  }, [creatives]);
 
   const availableCreatives = creatives.filter(
     (c) => !selectedCreatives.find((s) => s?.id === c.id)

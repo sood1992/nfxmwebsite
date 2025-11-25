@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Bot, Send, Sparkles, TrendingUp, AlertCircle, Lightbulb, RefreshCw } from 'lucide-react';
-import { creatives, performanceMetrics } from '../data/mockData';
 import { useApp } from '../context/AppContext';
 import './Copilot.css';
 
 const Copilot = () => {
-  const { settings } = useApp();
+  const { settings, creativesData, performanceMetrics } = useApp();
+
+  // Use creatives from context (alias for backward compatibility)
+  const creatives = creativesData;
   const [messages, setMessages] = useState([
     {
       id: 1,
