@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Anchor, Clock, Eye, Download } from 'lucide-react';
+import { Anchor, Clock, Eye, Download, AlertCircle, Loader } from 'lucide-react';
 import {
   FilterBar,
   MetricPills,
@@ -24,6 +24,9 @@ const TopHooks = () => {
     setSortOrder,
     exportToCSV,
     settings,
+    isLoading,
+    creativesData,
+    getDateRangeLabel,
   } = useApp();
 
   const [viewMode, setViewMode] = useState('card');
@@ -171,12 +174,38 @@ const TopHooks = () => {
         </div>
       )}
 
-      {creatives.length === 0 && (
+      {isLoading && (
+        <div className="empty-state">
+          <div className="empty-state-icon">
+            <Loader size={32} className="spin" />
+          </div>
+          <h3 className="empty-state-title">Loading ad data...</h3>
+          <p className="empty-state-description">
+            Fetching your creative performance data from Meta.
+          </p>
+        </div>
+      )}
+
+      {!isLoading && creatives.length === 0 && creativesData.length === 0 && (
+        <div className="empty-state">
+          <div className="empty-state-icon">
+            <AlertCircle size={32} />
+          </div>
+          <h3 className="empty-state-title">No ad data found</h3>
+          <p className="empty-state-description">
+            No ads found for the selected date range ({getDateRangeLabel()}).
+            <br />
+            Try selecting a different date range or check if your account has active ads.
+          </p>
+        </div>
+      )}
+
+      {!isLoading && creatives.length === 0 && creativesData.length > 0 && (
         <div className="empty-state">
           <div className="empty-state-icon">
             <Anchor size={32} />
           </div>
-          <h3 className="empty-state-title">No creatives found</h3>
+          <h3 className="empty-state-title">No creatives match filters</h3>
           <p className="empty-state-description">
             Try adjusting your filters to see more results.
           </p>

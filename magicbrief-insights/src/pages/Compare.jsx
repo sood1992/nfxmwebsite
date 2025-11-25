@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GitCompare, Plus, X, ArrowRight } from 'lucide-react';
+import { GitCompare, Plus, X, ArrowRight, AlertCircle, Loader } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -19,7 +19,7 @@ import { useApp } from '../context/AppContext';
 import './Compare.css';
 
 const Compare = () => {
-  const { settings, creativesData } = useApp();
+  const { settings, creativesData, isLoading, getDateRangeLabel } = useApp();
 
   // Use creatives from context (alias for backward compatibility)
   const creatives = creativesData;
@@ -274,8 +274,36 @@ const Compare = () => {
         </div>
       )}
 
-      {/* Empty State */}
-      {selectedCreatives.filter(Boolean).length < 2 && (
+      {/* Loading State */}
+      {isLoading && (
+        <div className="empty-state">
+          <div className="empty-state-icon">
+            <Loader size={32} className="spin" />
+          </div>
+          <h3 className="empty-state-title">Loading creative data...</h3>
+          <p className="empty-state-description">
+            Fetching your creative performance data from Meta.
+          </p>
+        </div>
+      )}
+
+      {/* No Data State */}
+      {!isLoading && creatives.length === 0 && (
+        <div className="empty-state">
+          <div className="empty-state-icon">
+            <AlertCircle size={32} />
+          </div>
+          <h3 className="empty-state-title">No ad data found</h3>
+          <p className="empty-state-description">
+            No ads found for the selected date range ({getDateRangeLabel()}).
+            <br />
+            Try selecting a different date range or check if your account has active ads.
+          </p>
+        </div>
+      )}
+
+      {/* Empty State - Need to Select */}
+      {!isLoading && creatives.length > 0 && selectedCreatives.filter(Boolean).length < 2 && (
         <div className="empty-comparison">
           <GitCompare size={48} />
           <h3>Select at least 2 creatives to compare</h3>

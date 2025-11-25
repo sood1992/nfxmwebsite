@@ -4,10 +4,10 @@ import { useApp } from '../context/AppContext';
 import './Copilot.css';
 
 const Copilot = () => {
-  const { settings, creativesData, performanceMetrics } = useApp();
+  const { settings, creativesData, performanceMetrics, isLoading } = useApp();
 
   // Use creatives from context (alias for backward compatibility)
-  const creatives = creativesData;
+  const creatives = creativesData || [];
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -78,8 +78,20 @@ const Copilot = () => {
   const generateResponse = (question) => {
     const lowerQuestion = question.toLowerCase();
 
+    if (creatives.length === 0) {
+      return `I don't have any ad data to analyze yet. Please make sure:
+- You have connected a Meta ad account
+- The account has active ads in the selected date range
+- The data has finished loading
+
+Once data is available, I can help you analyze your ad performance.`;
+    }
+
     if (lowerQuestion.includes('best performing') || lowerQuestion.includes('top creative')) {
-      const topCreative = creatives.sort((a, b) => b.hookScore - a.hookScore)[0];
+      const topCreative = [...creatives].sort((a, b) => (b.hookScore || 0) - (a.hookScore || 0))[0];
+      if (!topCreative) {
+        return `No creatives found to analyze. Please check your date range or ad account.`;
+      }
       return `Based on your current data, "${topCreative.name}" is your best performing creative with:
 
 - Hook Score: ${topCreative.hookScore}
@@ -101,12 +113,16 @@ Your current average hook score is 78. Implementing these changes could improve 
     }
 
     if (lowerQuestion.includes('ctr') || lowerQuestion.includes('click')) {
-      const topCTR = creatives.sort((a, b) => b.ctr - a.ctr)[0];
+      const sortedByCTR = [...creatives].sort((a, b) => (b.ctr || 0) - (a.ctr || 0));
+      const topCTR = sortedByCTR[0];
+      if (!topCTR) {
+        return `No CTR data available. Please check your date range or ad account.`;
+      }
       return `Your ads with highest CTR:
 
-1. "${topCTR.name}" - CTR: ${topCTR.ctr}%
-2. "${creatives[1].name}" - CTR: ${creatives[1].ctr}%
-3. "${creatives[2].name}" - CTR: ${creatives[2].ctr}%
+1. "${topCTR.name}" - CTR: ${topCTR.ctr || 0}%${sortedByCTR[1] ? `
+2. "${sortedByCTR[1].name}" - CTR: ${sortedByCTR[1].ctr || 0}%` : ''}${sortedByCTR[2] ? `
+3. "${sortedByCTR[2].name}" - CTR: ${sortedByCTR[2].ctr || 0}%` : ''}
 
 The common pattern among high-CTR ads is they all feature testimonials and have strong call-to-action buttons.`;
     }
@@ -136,8 +152,8 @@ Consider pausing these ads and reallocating budget to your top performers.`;
     return `I analyzed your question about "${question}".
 
 Based on your current ad account data:
-- Total Spend: ${settings.currency}${performanceMetrics.spend.value.toLocaleString('en-IN')}
-- Average CTR: ${performanceMetrics.ctr.value}%
+- Total Spend: ${settings.currency}${(performanceMetrics?.spend?.value || 0).toLocaleString('en-IN')}
+- Average CTR: ${performanceMetrics?.ctr?.value || 0}%
 - Active Creatives: ${creatives.length}
 
 Would you like me to provide more specific insights about any particular metric or creative?`;
@@ -259,14 +275,16 @@ Would you like me to provide more specific insights about any particular metric 
             <div className="stat-item">
               <span className="stat-label">Avg. Hook Score</span>
               <span className="stat-value">
-                {Math.round(creatives.reduce((sum, c) => sum + c.hookScore, 0) / creatives.length)}
+                {creatives.length > 0
+                  ? Math.round(creatives.reduce((sum, c) => sum + (c.hookScore || 0), 0) / creatives.length)
+                  : '-'}
               </span>
             </div>
             <div className="stat-item">
               <span className="stat-label">Total Spend</span>
               <span className="stat-value">
                 {settings.currency}
-                {(performanceMetrics.spend.value / 1000).toFixed(1)}K
+                {((performanceMetrics?.spend?.value || 0) / 1000).toFixed(1)}K
               </span>
             </div>
           </div>

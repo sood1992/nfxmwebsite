@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Video, Clock, Play, Pause, SkipBack, SkipForward } from 'lucide-react';
+import { Video, Clock, Play, Pause, SkipBack, SkipForward, AlertCircle, Loader } from 'lucide-react';
 import {
   LineChart,
   Line,
@@ -16,7 +16,7 @@ import { useApp } from '../context/AppContext';
 import './VideoBreakdown.css';
 
 const VideoBreakdown = () => {
-  const { settings, creativesData, videoBreakdownData } = useApp();
+  const { settings, creativesData, videoBreakdownData, isLoading, getDateRangeLabel } = useApp();
 
   // Use creatives from context (alias for backward compatibility)
   const creatives = creativesData;
@@ -261,6 +261,46 @@ const VideoBreakdown = () => {
           )}
         </div>
       </div>
+
+      {isLoading && (
+        <div className="empty-state">
+          <div className="empty-state-icon">
+            <Loader size={32} className="spin" />
+          </div>
+          <h3 className="empty-state-title">Loading video data...</h3>
+          <p className="empty-state-description">
+            Fetching your video performance data from Meta.
+          </p>
+        </div>
+      )}
+
+      {!isLoading && videoCreatives.length === 0 && creativesData.length === 0 && (
+        <div className="empty-state">
+          <div className="empty-state-icon">
+            <AlertCircle size={32} />
+          </div>
+          <h3 className="empty-state-title">No video ad data found</h3>
+          <p className="empty-state-description">
+            No video ads found for the selected date range ({getDateRangeLabel()}).
+            <br />
+            Try selecting a different date range or check if your account has active video ads.
+          </p>
+        </div>
+      )}
+
+      {!isLoading && videoCreatives.length === 0 && creativesData.length > 0 && (
+        <div className="empty-state">
+          <div className="empty-state-icon">
+            <Video size={32} />
+          </div>
+          <h3 className="empty-state-title">No video creatives found</h3>
+          <p className="empty-state-description">
+            Your current data doesn't include any video creatives.
+            <br />
+            This analysis is available for video ad formats only.
+          </p>
+        </div>
+      )}
     </div>
   );
 };
