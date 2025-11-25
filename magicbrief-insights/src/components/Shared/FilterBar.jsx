@@ -28,7 +28,7 @@ const FilterBar = ({ showGroupBy = true }) => {
   ];
 
   const filterOptions = {
-    delivery: ['All', 'Active', 'Paused', 'Deleted'],
+    delivery: ['All', 'Active', 'Paused', 'Archived', 'Deleted', 'Pending'],
     creativeType: ['All', 'Video', 'Image', 'Carousel'],
     hookScoreMin: [0, 50, 60, 70, 80, 90],
   };

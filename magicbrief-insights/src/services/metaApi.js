@@ -155,22 +155,61 @@ class MetaApiService {
   // Get ads for an ad account (no time_range - returns all ads)
   async getAds(accountId) {
     try {
+      console.log('[MetaAPI] Fetching ads for account:', accountId);
+
+      // First try with creative fields
       const data = await this.request(`/${accountId}/ads`, {
         fields: 'id,name,status,effective_status,creative{id,name,thumbnail_url,object_story_spec,asset_feed_spec},adset_id,campaign_id,created_time',
-        limit: 100,
+        limit: 500, // Increase limit to get more ads
       });
 
-      console.log('[MetaAPI] Ads response:', data?.data?.length || 0, 'ads');
+      console.log('[MetaAPI] Ads response:', {
+        dataExists: !!data,
+        hasDataArray: !!data?.data,
+        adsCount: data?.data?.length || 0,
+        firstAd: data?.data?.[0] ? {
+          id: data.data[0].id,
+          name: data.data[0].name,
+          hasCreative: !!data.data[0].creative,
+          hasThumbnail: !!data.data[0].creative?.thumbnail_url,
+        } : null,
+        paging: data?.paging ? 'has paging' : 'no paging',
+      });
+
+      // If we have paging and more results, log it
+      if (data?.paging?.next) {
+        console.log('[MetaAPI] Note: More ads available via pagination');
+      }
+
       return data?.data || [];
     } catch (error) {
-      console.error('Error fetching ads:', error);
-      return [];
+      console.error('[MetaAPI] Error fetching ads:', error);
+      console.error('[MetaAPI] Error details:', {
+        message: error.message,
+        accountId,
+      });
+
+      // Try a simpler request without creative fields if the first one fails
+      try {
+        console.log('[MetaAPI] Retrying with simpler fields...');
+        const simpleData = await this.request(`/${accountId}/ads`, {
+          fields: 'id,name,status,effective_status,adset_id,campaign_id,created_time',
+          limit: 500,
+        });
+        console.log('[MetaAPI] Simple ads response:', simpleData?.data?.length || 0, 'ads');
+        return simpleData?.data || [];
+      } catch (retryError) {
+        console.error('[MetaAPI] Retry also failed:', retryError.message);
+        return [];
+      }
     }
   }
 
   // Get ad insights (performance metrics)
   async getAdInsights(accountId, dateRange, breakdowns = []) {
     const { since, until } = this.getDateRange(dateRange);
+
+    console.log('[MetaAPI] Fetching ad insights:', { accountId, since, until });
 
     const fields = [
       'ad_id',
@@ -211,9 +250,28 @@ class MetaApiService {
       }
 
       const data = await this.request(`/${accountId}/insights`, params);
-      return this.processInsights(data.data || []);
+
+      console.log('[MetaAPI] Ad insights response:', {
+        dataExists: !!data,
+        hasDataArray: !!data?.data,
+        insightsCount: data?.data?.length || 0,
+        firstInsight: data?.data?.[0] ? {
+          adId: data.data[0].ad_id,
+          adName: data.data[0].ad_name,
+          spend: data.data[0].spend,
+        } : null,
+      });
+
+      const processed = this.processInsights(data?.data || []);
+      console.log('[MetaAPI] Processed insights:', processed.length);
+      return processed;
     } catch (error) {
-      console.error('Error fetching insights:', error);
+      console.error('[MetaAPI] Error fetching insights:', error);
+      console.error('[MetaAPI] Insights error details:', {
+        message: error.message,
+        accountId,
+        dateRange: { since, until },
+      });
       return [];
     }
   }

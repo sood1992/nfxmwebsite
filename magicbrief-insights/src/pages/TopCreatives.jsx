@@ -90,11 +90,17 @@ const TopCreatives = () => {
       render: (value, row) => (
         <div className="creative-cell">
           <div className="creative-thumb">
-            <img src={row.thumbnail} alt={value} />
+            {row.thumbnail ? (
+              <img src={row.thumbnail} alt={value} />
+            ) : (
+              <div className="thumb-placeholder-small">
+                {row.type === 'Video' ? '🎬' : '🖼️'}
+              </div>
+            )}
           </div>
           <div className="creative-details">
             <span className="name">{value}</span>
-            <span className="ads-count">{row.adsCount} ads</span>
+            <span className="ads-count">{row.adsCount} ads • {row.status}</span>
           </div>
         </div>
       ),
@@ -226,9 +232,13 @@ const TopCreatives = () => {
               <div key={creative.id} className="chart-thumb-item">
                 <span className="thumb-spend">
                   {settings.currency}
-                  {creative.spend.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  {(creative.spend || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </span>
-                <img src={creative.thumbnail} alt={creative.name} className="thumb-img" />
+                {creative.thumbnail ? (
+                  <img src={creative.thumbnail} alt={creative.name} className="thumb-img" />
+                ) : (
+                  <div className="thumb-img thumb-placeholder">📊</div>
+                )}
                 <span className="thumb-name">{creative.name}</span>
               </div>
             ))}
@@ -295,8 +305,17 @@ const TopCreatives = () => {
               onClick={() => toggleCreativeSelection(creative.id)}
             >
               <div className="creative-thumbnail">
-                <img src={creative.thumbnail} alt={creative.name} />
+                {creative.thumbnail ? (
+                  <img src={creative.thumbnail} alt={creative.name} />
+                ) : (
+                  <div className="thumbnail-placeholder">
+                    <span>{creative.type === 'Video' ? '🎬' : '🖼️'}</span>
+                  </div>
+                )}
                 <span className="creative-type-badge">{creative.type}</span>
+                <span className={`status-badge status-${creative.status?.toLowerCase()}`}>
+                  {creative.status}
+                </span>
               </div>
               <div className="creative-info">
                 <h3>{creative.name}</h3>
@@ -306,12 +325,14 @@ const TopCreatives = () => {
                     <span>Spend</span>
                     <span className="metric-value">
                       {settings.currency}
-                      {creative.spend.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      {(creative.spend || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                   <div className="metric-row">
                     <span>ROAS</span>
-                    <span className="metric-value">{creative.roas || '-'}</span>
+                    <span className="metric-value">
+                      {creative.roas ? creative.roas.toFixed(2) : '-'}
+                    </span>
                   </div>
                 </div>
               </div>

@@ -43,9 +43,9 @@ export const AppProvider = ({ children }) => {
     end: new Date(2025, 10, 24),
   });
 
-  // Filters state
+  // Filters state - default to 'All' to show all ads initially
   const [filters, setFilters] = useState({
-    delivery: 'Active',
+    delivery: 'All',
     creativeType: 'All',
     hookScoreMin: 0,
     status: 'All',
@@ -119,6 +119,27 @@ export const AppProvider = ({ children }) => {
     // Real Meta accounts have accountId in "act_xxxxx" format
     // Demo/mock accounts might only have id
     return account?.accountId || (account?.id ? `act_${account.id}` : null);
+  }, []);
+
+  // Normalize Meta API status to title case for filter matching
+  const normalizeStatus = useCallback((status) => {
+    if (!status) return 'Unknown';
+    // Map common Meta statuses to filter-friendly values
+    const statusMap = {
+      'ACTIVE': 'Active',
+      'PAUSED': 'Paused',
+      'DELETED': 'Deleted',
+      'ARCHIVED': 'Archived',
+      'PENDING_REVIEW': 'Pending',
+      'DISAPPROVED': 'Disapproved',
+      'PREAPPROVED': 'Preapproved',
+      'CAMPAIGN_PAUSED': 'Paused',
+      'ADSET_PAUSED': 'Paused',
+      'PENDING_BILLING_INFO': 'Pending',
+      'IN_PROCESS': 'Processing',
+      'WITH_ISSUES': 'Issues',
+    };
+    return statusMap[status.toUpperCase()] || status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
   }, []);
 
   // Check if this is a demo/mock account (not a real Meta account)
@@ -220,6 +241,7 @@ export const AppProvider = ({ children }) => {
           const formattedCreatives = data.ads.map((ad, index) => {
             const insight = insightsMap.get(ad.id) || {};
             const hasInsights = !!insight.adId;
+            const rawStatus = ad.effective_status || ad.status || 'Unknown';
 
             return {
               id: ad.id || index + 1,
@@ -243,7 +265,8 @@ export const AppProvider = ({ children }) => {
               ctr: insight.ctr || 0,
               impressions: insight.impressions || 0,
               clicks: insight.clicks || 0,
-              status: ad.effective_status || ad.status || 'Unknown',
+              status: normalizeStatus(rawStatus), // Normalize status for filter matching
+              rawStatus, // Keep raw status for debugging
               campaignName: insight.campaignName || '',
               adSetName: insight.adSetName || '',
               campaignId: ad.campaign_id,
@@ -254,6 +277,10 @@ export const AppProvider = ({ children }) => {
           });
           setCreativesData(formattedCreatives);
           console.log('[AppContext] Set', formattedCreatives.length, 'creatives (', formattedCreatives.filter(c => c.hasInsights).length, 'with insights)');
+          console.log('[AppContext] Status distribution:', formattedCreatives.reduce((acc, c) => {
+            acc[c.status] = (acc[c.status] || 0) + 1;
+            return acc;
+          }, {}));
         } else if (data.adInsights?.length > 0) {
           // Fallback: if no ads data but we have insights, use insights directly
           console.log('[AppContext] No ads data, using insights directly:', data.adInsights.length);
@@ -319,7 +346,7 @@ export const AppProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedAccount, dateRange]);
+  }, [selectedAccount, dateRange, normalizeStatus, getAccountIdForApi]);
 
   // Generate AI-like recommendations based on data
   const generateRecommendations = useCallback((data) => {
