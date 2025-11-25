@@ -1,32 +1,39 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Facebook, Loader2, AlertCircle, Sparkles } from 'lucide-react';
+import { Facebook, Loader2, AlertCircle, Sparkles, Info } from 'lucide-react';
 import './Login.css';
 
 const Login = () => {
   const { loginWithPopup, loginWithRedirect, loginDemo, isLoading, error } = useAuth();
   const [loginError, setLoginError] = useState(null);
+  const [isMetaLoading, setIsMetaLoading] = useState(false);
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleMetaLogin = async () => {
     setLoginError(null);
+    setIsMetaLoading(true);
+
     try {
       await loginWithPopup();
       navigate('/');
     } catch (err) {
-      // Try redirect method if popup fails
-      loginWithRedirect();
+      console.error('Meta login error:', err);
+      setLoginError('Meta login requires a configured Meta App. Please use Demo Mode to explore the platform.');
+      setIsMetaLoading(false);
     }
   };
 
   const handleDemoLogin = async () => {
     setLoginError(null);
+    setIsDemoLoading(true);
     try {
       await loginDemo();
       navigate('/');
     } catch (err) {
       setLoginError('Demo login failed. Please try again.');
+      setIsDemoLoading(false);
     }
   };
 
@@ -56,13 +63,33 @@ const Login = () => {
 
         {/* Login Options */}
         <div className="login-options">
+          {/* Demo Login Button - Primary */}
+          <button
+            className="login-btn demo-btn primary"
+            onClick={handleDemoLogin}
+            disabled={isLoading || isDemoLoading}
+          >
+            {isDemoLoading ? (
+              <Loader2 size={20} className="spinner" />
+            ) : (
+              <Sparkles size={20} />
+            )}
+            <span>Enter Demo Mode</span>
+          </button>
+
+          <p className="demo-hint">Explore all features with sample data</p>
+
+          <div className="login-divider">
+            <span>or connect your account</span>
+          </div>
+
           {/* Meta Login Button */}
           <button
             className="login-btn meta-btn"
             onClick={handleMetaLogin}
-            disabled={isLoading}
+            disabled={isLoading || isMetaLoading}
           >
-            {isLoading ? (
+            {isMetaLoading ? (
               <Loader2 size={20} className="spinner" />
             ) : (
               <Facebook size={20} />
@@ -70,19 +97,10 @@ const Login = () => {
             <span>Continue with Meta</span>
           </button>
 
-          <div className="login-divider">
-            <span>or</span>
+          <div className="meta-note">
+            <Info size={14} />
+            <span>Requires Meta App configuration</span>
           </div>
-
-          {/* Demo Login Button */}
-          <button
-            className="login-btn demo-btn"
-            onClick={handleDemoLogin}
-            disabled={isLoading}
-          >
-            <Sparkles size={20} />
-            <span>Try Demo Mode</span>
-          </button>
         </div>
 
         {/* Features List */}
