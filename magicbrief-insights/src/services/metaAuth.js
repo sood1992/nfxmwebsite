@@ -6,12 +6,12 @@ const META_APP_SECRET = import.meta.env.VITE_META_APP_SECRET || '';
 const REDIRECT_URI = import.meta.env.VITE_META_REDIRECT_URI || `${window.location.origin}/auth/callback`;
 
 // Required permissions for Meta Marketing API
+// Note: read_insights is deprecated - ads_read covers ad insights access
 const REQUIRED_PERMISSIONS = [
   'ads_read',
   'ads_management',
   'business_management',
   'pages_read_engagement',
-  'read_insights',
 ].join(',');
 
 // Meta Graph API version
