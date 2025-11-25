@@ -1,0 +1,104 @@
+.metric-card {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.metric-card:hover {
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-md);
+}
+
+.metric-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-sm);
+}
+
+.metric-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.metric-trend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.metric-trend.up {
+  color: var(--success-color);
+}
+
+.metric-trend.down {
+  color: var(--error-color);
+}
+
+.trend-percentage {
+  color: var(--text-tertiary);
+  margin-left: 4px;
+}
+
+.metric-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+  margin-bottom: var(--spacing-sm);
+}
+
+.metric-value .currency {
+  font-size: 1.5rem;
+  margin-right: 2px;
+}
+
+.metric-value .unit {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+}
+
+.metric-status {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 2px 0;
+  margin-bottom: var(--spacing-md);
+}
+
+.metric-status.status-success {
+  color: var(--success-color);
+}
+
+.metric-status.status-info {
+  color: var(--info-color);
+}
+
+.metric-status.status-warning {
+  color: var(--warning-color);
+}
+
+.metric-chart {
+  margin-top: var(--spacing-sm);
+}
+
+.chart-tooltip {
+  background-color: var(--text-primary);
+  color: var(--text-inverse);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chart-tooltip strong {
+  font-weight: 600;
+}

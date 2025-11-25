@@ -1,0 +1,241 @@
+.data-table-wrapper {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.data-table th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  background-color: var(--bg-secondary);
+}
+
+.data-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.data-table th.sortable:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.data-table th.sorted {
+  color: var(--primary-color);
+}
+
+.th-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.column-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  background-color: var(--primary-color);
+  border-radius: var(--radius-sm);
+}
+
+.sort-icons {
+  display: flex;
+  flex-direction: column;
+  margin-left: 4px;
+}
+
+.sort-icons svg {
+  color: var(--text-tertiary);
+}
+
+.sort-icons svg.active {
+  color: var(--primary-color);
+}
+
+.data-table tbody tr {
+  transition: background-color var(--transition-fast);
+}
+
+.data-table tbody tr:hover {
+  background-color: var(--bg-secondary);
+}
+
+.data-table tbody tr.selected {
+  background-color: var(--primary-bg);
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Checkbox Cell */
+.checkbox-cell {
+  width: 48px;
+  text-align: center;
+}
+
+.table-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background-color: var(--bg-primary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.table-checkbox:hover {
+  border-color: var(--primary-color);
+}
+
+.table-checkbox.checked {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.table-checkbox.partial {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+/* Actions Cell */
+.actions-cell {
+  width: 48px;
+  text-align: center;
+}
+
+.row-actions {
+  position: relative;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.action-btn:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.action-menu {
+  position: absolute;
+  right: 100%;
+  top: 0;
+  min-width: 140px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 50;
+  overflow: hidden;
+}
+
+.action-menu button {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.action-menu button:hover {
+  background-color: var(--bg-tertiary);
+}
+
+/* Score Badge */
+.score-badge {
+  display: inline-block;
+  font-weight: 600;
+}
+
+.score-badge.excellent {
+  color: var(--success-color);
+}
+
+.score-badge.good {
+  color: #84CC16;
+}
+
+.score-badge.average {
+  color: var(--warning-color);
+}
+
+.score-badge.poor {
+  color: var(--error-color);
+}
+
+/* Creative Cell */
+.creative-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.creative-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.creative-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.creative-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.creative-details .name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.creative-details .ads-count {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
